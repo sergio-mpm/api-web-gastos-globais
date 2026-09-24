@@ -1,0 +1,160 @@
+/* ================= BODY ================= */
+@import url('https://fonts.googleapis.com/css2?family=Modesto+Condensed:wght@700&display=swap');
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background-image: url('img/background-img.jpg');
+    background-size: cover;
+    background-repeat: repeat-y;
+    background-position: top center;
+    margin: 0;
+    padding-top: 60px; /* espaço para navbar fixa */
+}
+
+/* ================= NAVBAR ================= */
+.navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+}
+
+#mainNavbar {
+    background-color: #1d7882
+}
+
+/* ================= CARD ================= */
+.card {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    background-color: #ffffff;
+}
+
+/* ================= LOGIN ================= */
+#loginView {
+    max-width: 400px;
+    margin: 50px auto; /* centraliza vertical e horizontal */
+    padding: 30px;
+    text-align: center;
+}
+
+#loginView img {
+    display: block;
+    margin: 0 auto 15px auto; /* centraliza e dá espaço abaixo */
+    width: 60px;
+    height: 60px;
+}
+
+#loginView h4 {
+    font-family: 'Modesto Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 1.8rem;
+    letter-spacing: 1px;
+    color: #155724; /* verde escuro */
+    margin-bottom: 20px;
+}
+
+/* ================= FORM TITLES ================= */
+#formTitle {
+    text-align: center;
+    font-weight: bold;
+    color: #155724;
+    margin-bottom: 15px;
+}
+
+/* ================= LIST GROUP ================= */
+.list-group-item {
+    font-size: 0.95rem;
+}
+
+/* ================= BUTTONS ================= */
+.btn {
+    border-radius: 5px;
+}
+
+.btn-primary {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.btn-success {
+    background-color: #218838;
+    border-color: #218838;
+}
+
+.btn-danger {
+    background-color: #c82333;
+    border-color: #c82333;
+}
+
+.btn-outline-secondary {
+    color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+/* ================= DASHBOARD ================= */
+#porTipo, #porUsuario {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.card h6 {
+    font-weight: bold;
+    color: #155724;
+}
+
+/* ================= UTIL ================= */
+input.form-control, select.form-select {
+    border-radius: 5px;
+}
+
+.custom-tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+.custom-tooltip .custom-tooltiptext {
+    visibility: hidden;
+    width: 200px; /* largura do tooltip */
+    background-color: black;
+    color: #fff;
+    text-align: left;
+    border-radius: 5px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%; /* acima do ícone */
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.85rem;
+    white-space: pre-wrap; /* quebra de linha no texto */
+}
+
+.custom-tooltip:hover .custom-tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+
+.custom-tooltip-icon {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+
+/* ================= MEDIA QUERY ================= */
+@media (max-width: 576px) {
+    #loginView {
+        margin: 20px;
+        padding: 20px;
+    }
+}
