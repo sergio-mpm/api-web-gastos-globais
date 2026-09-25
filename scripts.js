@@ -3,7 +3,10 @@ let usuarioLogado = null;
 let cpfLogado = null;
 let editId = null;
 let editUsuarioCpf = null;
-let baseUrl = window.env?.BASE_URL || `http://localhost:5000`;
+const defaultBaseUrl = window.location.port === '8080'
+    ? 'http://host.docker.internal:5000'
+    : 'http://localhost:5000';
+let baseUrl = window.env?.BASE_URL || defaultBaseUrl;
 
 /* ================= AUTH ================= */
 
@@ -12,12 +15,7 @@ function login() {
     const senha = document.getElementById('loginSenha').value;
 
     if (!cpf || !senha) {
-        return Swal.fire({
-            title: 'Campos Obrigatórios',
-            text: 'Por favor, informe o CPF e a Senha.',
-            icon: 'warning',
-            confirmButtonColor: '#3085d6'
-        });
+        return alert('Por favor, informe o CPF e a Senha.');
     }
 
     fetch(`${baseUrl}/auth/login`, {
@@ -31,28 +29,16 @@ function login() {
     })
     .then(data => {
         sessionStorage.setItem('token', data.access_token);
+        localStorage.setItem('token', data.access_token);
         sessionStorage.setItem('cpf', cpf);
+        localStorage.setItem('cpf', cpf);
 
         usuarioLogado = cpf;
-
-        Swal.fire({
-            title: 'Bem-vindo!',
-            text: 'Login realizado com sucesso.',
-            icon: 'success',
-            timer: 1500,
-            showConfirmButton: false
-        }).then(() => {
-            showApp();
-        });
+        alert('Login realizado com sucesso.');
+        showApp();
     })
     .catch(err => {
-        Swal.fire({
-            title: 'Erro de Login',
-            text: err.message,
-            icon: 'error',
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Tentar novamente'
-        });
+        alert('Erro de Login: ' + err.message);
     });
 }
 
@@ -99,32 +85,16 @@ function togglePasswordVisibility(inputId, btn) {
 }
 
 function logout() {
-    Swal.fire({
-        title: 'Sair do Sistema?',
-        text: "Você precisará fazer login novamente para acessar as predições.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#28a745', 
-        cancelButtonColor: '#dc3545',  
-        confirmButtonText: 'Sim, sair!',
-        cancelButtonText: 'Cancelar',
-        reverseButtons: true 
-    }).then((result) => {
-        if (result.isConfirmed) {
-            
-            sessionStorage.removeItem('token');
-            sessionStorage.removeItem('cpf');
-            
-            
-            localStorage.removeItem('token');
-            localStorage.removeItem('cpf');
+    const confirmar = confirm('Você precisará fazer login novamente para acessar as predições. Deseja sair?');
+    if (!confirmar) return;
 
-            usuarioLogado = null;
-            
-            
-            location.reload();
-        }
-    });
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('cpf');
+    localStorage.removeItem('token');
+    localStorage.removeItem('cpf');
+
+    usuarioLogado = null;
+    location.reload();
 }
 
 function showApp() {
@@ -134,6 +104,8 @@ function showApp() {
     carregarDespesas();
     carregarUsuarios();
     carregarMoedas();
+    carregarTotalGeral();
+    carregarTotalPorMoeda();
 }
 
 /* ================= CRUD ================= */
@@ -220,46 +192,98 @@ function filterTipo(tipo) {
 
 /* ================= RENDER ================= */
 
+function getMoedaLabel(moeda) {
+    const map = {
+        BRL: 'R$',
+        USD: 'US$',
+        EUR: '€',
+        GBP: '£',
+        JPY: '¥',
+        CAD: 'C$',
+        AUD: 'A$',
+        CHF: 'CHF',
+        CNY: '¥',
+        HKD: 'HK$',
+        CZK: 'Kč',
+        DKK: 'kr',
+        HUF: 'Ft',
+        IDR: 'Rp',
+        ILS: '₪',
+        INR: '₹',
+        ISK: 'kr',
+        KRW: '₩',
+        MXN: 'MX$',
+        NOK: 'kr',
+        NZD: 'NZ$',
+        PLN: 'zł',
+        SEK: 'kr',
+        SGD: 'S$',
+        TRY: '₺',
+        ZAR: 'R'
+    };
+
+    return map[moeda?.toUpperCase()] || moeda?.toUpperCase() || 'R$';
+}
+
+function formatCurrency(value, moeda = 'BRL') {
+    const numero = Number(value || 0);
+    const label = getMoedaLabel(moeda);
+    return `${label} ${numero.toFixed(2)}`;
+}
+
+function sortDespesaByMoeda(a, b) {
+    const moedaOrder = (moeda) => {
+        if (moeda === 'BRL') return 0;
+        return 1;
+    };
+
+    const order = moedaOrder(a.moeda) - moedaOrder(b.moeda);
+    if (order !== 0) return order;
+    return (a.moeda || '').localeCompare(b.moeda || '');
+}
+
 function render(filtroTipo = '') {
     const lista = document.getElementById('lista');
     lista.innerHTML = '';
 
     let total = 0;
 
-    despesas
+    const despesasFiltradas = [...despesas]
         .filter(d => !filtroTipo || d.tipo === filtroTipo)
-        .forEach(d => {
-            total += d.valor;
-            const data = new Date(d.data_despesa);
-            const dia = String(data.getDate()).padStart(2, '0');
-            const mes = String(data.getMonth() + 1).padStart(2, '0');
-            const ano = data.getFullYear();
-            const dataFormatada = `${dia}/${mes}/${ano}`;
-            lista.innerHTML += `
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>${d.nome}</strong><br>
-                        <small>${d.tipo} | ${d.responsavel} | ${dataFormatada}</small>
-                        ${d.comentario ? `
-                            <span class="custom-tooltip">
-                                <img
-                                    src="img/question-mark-svgrepo-com.svg"
-                                    alt="Comentário"
-                                    class="custom-tooltip-icon"
-                                />
-                            <span class="custom-tooltiptext">${d.comentario}</span>
-                            </span>` : ''}
-                    </div>
-                    <div>
-                        R$ ${d.valor.toFixed(2)}
-                        <button class="btn btn-sm btn-warning ms-1" onclick="editDespesa(${d.id})">✏️</button>
-                        <button class="btn btn-sm btn-danger ms-1" onclick="removeDespesa(${d.id})">🗑️</button>
-                    </div>
-                </li>
-            `;
-        });
+        .sort(sortDespesaByMoeda);
 
-    document.getElementById('total').innerText = total.toFixed(2);
+    despesasFiltradas.forEach(d => {
+        total += d.valor;
+        const data = new Date(d.data_despesa);
+        const dia = String(data.getDate()).padStart(2, '0');
+        const mes = String(data.getMonth() + 1).padStart(2, '0');
+        const ano = data.getFullYear();
+        const dataFormatada = `${dia}/${mes}/${ano}`;
+        lista.innerHTML += `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>${d.nome}</strong><br>
+                    <small>${d.tipo} | ${d.responsavel || d.cpf} | ${dataFormatada} | ${d.moeda || 'BRL'}</small>
+                    ${d.comentario ? `
+                        <span class="custom-tooltip">
+                            <img
+                                src="img/question-mark-svgrepo-com.svg"
+                                alt="Comentário"
+                                class="custom-tooltip-icon"
+                            />
+                        <span class="custom-tooltiptext">${d.comentario}</span>
+                        </span>` : ''}
+                </div>
+                <div>
+                    ${formatCurrency(d.valor, d.moeda || 'BRL')}
+                    <button class="btn btn-sm btn-warning ms-1" onclick="editDespesa(${d.id})">✏️</button>
+                    <button class="btn btn-sm btn-danger ms-1" onclick="removeDespesa(${d.id})">🗑️</button>
+                </div>
+            </li>
+        `;
+    });
+
+    document.getElementById('total').innerText = formatCurrency(total, 'BRL');
     renderPorTipo();
     renderPorUsuario();
 }
@@ -268,24 +292,88 @@ function carregarDespesas() {
     fetch(`${baseUrl}/despesas/getallexpenses`)
         .then(res => res.json())
         .then(data => {
-            despesas = data.despesas; // conforme backend retorna {"despesas": [...]}
+            despesas = data.despesas;
             render();
         })
         .catch(err => alert('Erro ao carregar despesas'));
 }
 
+function carregarTotalGeral() {
+    fetch(`${baseUrl}/despesas/total/conversao`)
+        .then(res => res.json())
+        .then(data => {
+            const total = (data.totais || []).reduce((acc, item) => acc + Number(item.totalConvertido || 0), 0);
+            document.getElementById('total').innerText = formatCurrency(total, 'BRL');
+        })
+        .catch(err => alert('Erro ao carregar total geral: ' + err));
+}
+
+function carregarTotalPorMoeda() {
+    fetch(`${baseUrl}/despesas/total/moedas`)
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById('totalMoedaSelecionada');
+            if (!select) return;
+
+            select.innerHTML = '';
+            const moedas = (data.totais || []).map(item => item.moeda).sort((a, b) => {
+                if (a === 'BRL') return -1;
+                if (b === 'BRL') return 1;
+                return a.localeCompare(b);
+            });
+
+            moedas.forEach(moeda => {
+                const option = document.createElement('option');
+                option.value = moeda;
+                option.textContent = moeda;
+                select.appendChild(option);
+            });
+
+            if (moedas.length) {
+                select.value = moedas.includes('BRL') ? 'BRL' : moedas[0];
+                atualizarTotalMoedaSelecionada();
+            }
+
+            select.onchange = atualizarTotalMoedaSelecionada;
+        })
+        .catch(err => alert('Erro ao carregar totais por moeda: ' + err));
+}
+
+function atualizarTotalMoedaSelecionada() {
+    const select = document.getElementById('totalMoedaSelecionada');
+    const output = document.getElementById('totalMoedaAtual');
+    if (!select || !output) return;
+
+    const moeda = select.value;
+    if (!moeda) {
+        output.innerText = '-';
+        return;
+    }
+
+    fetch(`${baseUrl}/despesas/total/moeda/${encodeURIComponent(moeda)}`)
+        .then(res => res.json())
+        .then(data => {
+            output.innerText = formatCurrency(data.total || 0, data.moeda || moeda);
+        })
+        .catch(err => {
+            output.innerText = 'Erro';
+            console.error(err);
+        });
+}
+
 function carregarMoedas() {
-    fetch(`${baseUrl}/moedas`)
+    fetch(`${baseUrl}/despesas/moedas`)
         .then(res => res.json())
         .then(data => {
             const select = document.getElementById('despesaMoeda');
-            select.innerHTML = ''; // limpa opções
-            for (const [codigo, nome] of Object.entries(data)) {
+            select.innerHTML = '';
+            const moedas = data.moedas || Object.keys(data);
+            moedas.forEach(codigo => {
                 const option = document.createElement('option');
                 option.value = codigo;
-                option.textContent = `${nome} (${codigo})`;
+                option.textContent = codigo;
                 select.appendChild(option);
-            }
+            });
         })
         .catch(err => alert('Erro ao carregar moedas: ' + err));
 }
@@ -297,11 +385,25 @@ function renderPorTipo() {
     ul.innerHTML = '';
     const resumo = {};
 
-    despesas.forEach(d => resumo[d.tipo] = (resumo[d.tipo] || 0) + d.valor);
+    despesas.forEach(d => {
+        const chave = `${d.tipo}|${d.moeda || 'BRL'}`;
+        resumo[chave] = (resumo[chave] || 0) + d.valor;
+    });
 
-    for (let tipo in resumo) {
-        ul.innerHTML += `<li class="list-group-item">${tipo}: R$ ${resumo[tipo].toFixed(2)}</li>`;
-    }
+    const entradas = Object.entries(resumo)
+        .map(([chave, valor]) => {
+            const [tipo, moeda] = chave.split('|');
+            return { tipo, moeda, valor };
+        })
+        .sort((a, b) => {
+            if (a.moeda === 'BRL' && b.moeda !== 'BRL') return -1;
+            if (a.moeda !== 'BRL' && b.moeda === 'BRL') return 1;
+            return a.moeda.localeCompare(b.moeda) || a.tipo.localeCompare(b.tipo);
+        });
+
+    entradas.forEach(item => {
+        ul.innerHTML += `<li class="list-group-item">${item.tipo} (${item.moeda}): ${formatCurrency(item.valor, item.moeda)}</li>`;
+    });
 }
 
 function renderPorUsuario() {
@@ -309,11 +411,25 @@ function renderPorUsuario() {
     ul.innerHTML = '';
     const resumo = {};
 
-    despesas.forEach(d => resumo[d.responsavel] = (resumo[d.responsavel] || 0) + d.valor);
+    despesas.forEach(d => {
+        const chave = `${d.responsavel || d.cpf}|${d.moeda || 'BRL'}`;
+        resumo[chave] = (resumo[chave] || 0) + d.valor;
+    });
 
-    for (let user in resumo) {
-        ul.innerHTML += `<li class="list-group-item">${user}: R$ ${resumo[user].toFixed(2)}</li>`;
-    }
+    const entradas = Object.entries(resumo)
+        .map(([chave, valor]) => {
+            const [usuario, moeda] = chave.split('|');
+            return { usuario, moeda, valor };
+        })
+        .sort((a, b) => {
+            if (a.moeda === 'BRL' && b.moeda !== 'BRL') return -1;
+            if (a.moeda !== 'BRL' && b.moeda === 'BRL') return 1;
+            return a.moeda.localeCompare(b.moeda) || a.usuario.localeCompare(b.usuario);
+        });
+
+    entradas.forEach(item => {
+        ul.innerHTML += `<li class="list-group-item">${item.usuario} (${item.moeda}): ${formatCurrency(item.valor, item.moeda)}</li>`;
+    });
 }
 
 /* ================= UTIL ================= */
@@ -334,12 +450,12 @@ function ClearFormUsers() {
 }
 
 function getCpfFromToken() {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
     if (!token) return null;
 
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        return payload.sub; // identity do JWT
+        return payload.sub || payload.cpf || null;
     } catch (e) {
         console.error('Erro ao decodificar token', e);
         return null;
@@ -360,12 +476,13 @@ document.querySelectorAll('.navbar-nav a').forEach(link => {
 /* ================= CRUD USUÁRIOS ================= */
 
 function carregarUsuarios() {
-    fetch(`${baseUrl}/usuarios/getallusers`)
+    fetch(`${baseUrl}/usuarios`)
         .then(res => res.json())
         .then(data => {
             const lista = document.getElementById('listaUsuarios');
             lista.innerHTML = '';
-            data.usuarios.forEach(u => {
+            const usuarios = data.usuarios || [];
+            usuarios.forEach(u => {
                 lista.innerHTML += `
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div>
@@ -445,11 +562,12 @@ function removerUsuario(cpf) {
 /* ================ HEADER ================ */
 
 function authHeaders() {
-    const token = localStorage.getItem('token');
-    return {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-    };
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+    return headers;
 }
 
 

@@ -1,3 +1,2 @@
-window.env = {
-    BASE_URL: "http://backend:5000"
-};
+window.env = window.env || {};
+window.env.BASE_URL = "http://host.docker.internal:5000";

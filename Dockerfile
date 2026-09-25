@@ -9,6 +9,7 @@ RUN rm -rf ./*
 
 # Copia os arquivos do frontend para dentro do container
 COPY index.html .
+COPY env.docker.js ./env.js
 COPY style.css .
 COPY scripts.js .
 
