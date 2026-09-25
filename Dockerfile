@@ -13,7 +13,7 @@ COPY env.docker.js ./env.js
 COPY style.css .
 COPY scripts.js .
 
-# (Opcional) Se tiver imagens ou outros assets
+# Copia a pasta de imagens para dentro do container
 COPY img ./img
 
 # Exposição da porta padrão do Nginx
