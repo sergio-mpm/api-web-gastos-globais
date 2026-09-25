@@ -110,19 +110,40 @@ function showApp() {
 
 /* ================= CRUD ================= */
 
+function validateDespesa({ descricao, valor, moeda, tipo, dataDespesa }) {
+    if (!descricao || !descricao.trim()) return 'Informe a descrição da despesa.';
+    if (valor === '' || valor === null || valor === undefined || Number.isNaN(Number(valor)) || Number(valor) <= 0) {
+        return 'Informe o valor da despesa.';
+    }
+    if (!moeda || !String(moeda).trim()) return 'Selecione a moeda da despesa.';
+    if (!tipo || !String(tipo).trim()) return 'Selecione o tipo da despesa.';
+    if (!dataDespesa || !String(dataDespesa).trim()) return 'Informe a data da despesa.';
+    return null;
+}
+
 function addDespesa() {
     const descricao = document.getElementById('despesaDescricao').value;
     const valor = document.getElementById('despesaValor').value;
+    const moeda = document.getElementById('despesaMoeda').value;
     const tipo = document.getElementById('despesaTipo').value;
     const comentario = document.getElementById('despesaComentario').value;
     const dataDespesa = document.getElementById('despesaData').value;
-    const dataIsoDespesa = new Date(dataDespesa).toISOString();
+
+    const validationError = validateDespesa({ descricao, valor, moeda, tipo, dataDespesa });
+    if (validationError) return alert(validationError);
+
+    const data = new Date(dataDespesa);
+    if (Number.isNaN(data.getTime())) {
+        return alert('Data da despesa inválida.');
+    }
+
     const cpf = getCpfFromToken();
     const despesa = {
-        nome: descricao,
+        nome: descricao.trim(),
         valor: parseFloat(valor),
+        moeda: moeda.toUpperCase(),
         tipo: tipo,
-        data_despesa: dataIsoDespesa,
+        data_despesa: data.toISOString(),
         comentario: comentario,
         cpf: cpf
     };
@@ -146,6 +167,9 @@ function addDespesa() {
         document.querySelector('#formTitle').innerText = 'Nova Despesa';
         document.querySelector('#despesaFormButton').innerText = 'Salvar';
         carregarDespesas();
+        carregarMoedas();
+        carregarTotalGeral();
+        carregarTotalPorMoeda();
     })
     .catch(err => alert(err.message));
 }
@@ -160,6 +184,10 @@ function editDespesa(id) {
     // Preenche o formulário
     document.getElementById('despesaDescricao').value = d.nome;
     document.getElementById('despesaValor').value = d.valor;
+    const moedaSelect = document.getElementById('despesaMoeda');
+    if (moedaSelect) {
+        moedaSelect.value = d.moeda || '';
+    }
     document.getElementById('despesaTipo').value = d.tipo;
     document.getElementById('despesaData').value = d.data_despesa
         ? new Date(d.data_despesa).toISOString().split('T')[0]
@@ -366,14 +394,17 @@ function carregarMoedas() {
         .then(res => res.json())
         .then(data => {
             const select = document.getElementById('despesaMoeda');
-            select.innerHTML = '';
+            if (!select) return;
+
             const moedas = data.moedas || Object.keys(data);
+            select.innerHTML = '<option value="">Moeda</option>';
             moedas.forEach(codigo => {
                 const option = document.createElement('option');
                 option.value = codigo;
                 option.textContent = codigo;
                 select.appendChild(option);
             });
+            select.value = '';
         })
         .catch(err => alert('Erro ao carregar moedas: ' + err));
 }
@@ -437,6 +468,10 @@ function renderPorUsuario() {
 function clearForm() {
     document.getElementById('despesaDescricao').value = '';
     document.getElementById('despesaValor').value = '';
+    const moedaSelect = document.getElementById('despesaMoeda');
+    if (moedaSelect) {
+        moedaSelect.value = '';
+    }
     document.getElementById('despesaTipo').value = '';
     document.getElementById('despesaData').value = '';
     document.getElementById('despesaComentario').value = '';
@@ -463,15 +498,23 @@ function getCpfFromToken() {
 }
 
 /* ================= SCROLL SUAVE NAVBAR ================= */
-document.querySelectorAll('.navbar-nav a').forEach(link => {
-    link.addEventListener('click', function(e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({ behavior: 'smooth' });
-        }
+if (typeof document !== 'undefined') {
+    document.querySelectorAll('.navbar-nav a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
     });
-});
+}
+
+if (typeof module !== 'undefined') {
+    module.exports = {
+        validateDespesa
+    };
+}
 
 /* ================= CRUD USUÁRIOS ================= */
 
@@ -572,7 +615,9 @@ function authHeaders() {
 
 
 /* ================= INIT ================= */
-usuarioLogado = localStorage.getItem('usuario');
-cpfLogado = localStorage.getItem('cpf');
+if (typeof localStorage !== 'undefined') {
+    usuarioLogado = localStorage.getItem('usuario');
+    cpfLogado = localStorage.getItem('cpf');
+}
 
-if (usuarioLogado && cpfLogado) showApp();
+if (usuarioLogado && cpfLogado && typeof showApp === 'function') showApp();

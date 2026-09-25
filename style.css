@@ -62,6 +62,12 @@ body {
     margin-bottom: 15px;
 }
 
+#appView .d-flex h3 {
+    color: #ffffff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+    margin: 0;
+}
+
 /* ================= LIST GROUP ================= */
 .list-group-item {
     font-size: 0.95rem;
