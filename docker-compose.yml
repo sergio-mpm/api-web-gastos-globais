@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  frontend:
+    build: ./api-web-gastos-globais
+    container_name: api-frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./api-web-gastos-globais:/usr/share/nginx/html
+      - ./env.docker.js:/usr/share/nginx/html/env.js

@@ -3,7 +3,7 @@ let usuarioLogado = null;
 let cpfLogado = null;
 let editId = null;
 let editUsuarioCpf = null;
-let baseUrl = `http://localhost:5000`
+let baseUrl = window.env?.BASE_URL || `http://localhost:5000`;
 
 /* ================= AUTH ================= */
 
@@ -133,6 +133,7 @@ function showApp() {
     document.getElementById('mainNavbar').classList.remove('d-none');
     carregarDespesas();
     carregarUsuarios();
+    carregarMoedas();
 }
 
 /* ================= CRUD ================= */
@@ -273,6 +274,22 @@ function carregarDespesas() {
         .catch(err => alert('Erro ao carregar despesas'));
 }
 
+function carregarMoedas() {
+    fetch(`${baseUrl}/moedas`)
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById('despesaMoeda');
+            select.innerHTML = ''; // limpa opções
+            for (const [codigo, nome] of Object.entries(data)) {
+                const option = document.createElement('option');
+                option.value = codigo;
+                option.textContent = `${nome} (${codigo})`;
+                select.appendChild(option);
+            }
+        })
+        .catch(err => alert('Erro ao carregar moedas: ' + err));
+}
+
 /* ================= DASHBOARD ================= */
 
 function renderPorTipo() {
@@ -349,16 +366,10 @@ function carregarUsuarios() {
             const lista = document.getElementById('listaUsuarios');
             lista.innerHTML = '';
             data.usuarios.forEach(u => {
-                const dataNasc = new Date(u.data_nascimento);
-                const dia = String(dataNasc.getDate()).padStart(2, '0');
-                const mes = String(dataNasc.getMonth() + 1).padStart(2, '0');
-                const ano = dataNasc.getFullYear();
-                const dataFormatada = `${dia}/${mes}/${ano}`;
-
                 lista.innerHTML += `
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div>
-                            <strong>${u.nome}</strong> | ${u.cpf} | ${u.email} | ${dataFormatada}
+                            <strong>${u.nome}</strong> | ${u.cpf} | ${u.email}
                         </div>
                         <div>
                             <button class="btn btn-sm btn-warning ms-1" onclick="editarUsuario('${u.cpf}')">✏️</button>
@@ -375,10 +386,6 @@ function salvarUsuario() {
     const nome = document.getElementById('usuarioNome').value;
     const cpf = document.getElementById('usuarioCpf').value;
     const email = document.getElementById('usuarioEmail').value;
-    const dataNascimento =
-        document.getElementById('usuarioData').value
-            ? new Date(document.getElementById('usuarioData').value).toISOString()
-            : null;
 
     const method = editUsuarioCpf ? 'PUT' : 'POST';
     const url = editUsuarioCpf
@@ -391,8 +398,7 @@ function salvarUsuario() {
         body: JSON.stringify({
             nome,
             cpf,
-            email,
-            data_nascimento: dataNascimento
+            email
         })
     })
     .then(res => {
